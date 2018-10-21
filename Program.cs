@@ -8,7 +8,7 @@ namespace MSI
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            GameRunner.RunGame(10, 10, 2, PaperSoccerHeuristics.RandomHeuristic, PaperSoccerHeuristics.RandomHeuristic);
         }
     }
 }
