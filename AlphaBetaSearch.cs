@@ -49,7 +49,9 @@ namespace MSI
             {
                 state.ApplyMove(action);
                 var moveValue = MinValue(state, alpha, beta, depth + 1).Utility;
-                ret = (moveValue, action);
+
+                if (double.IsNaN(ret.Utility) || moveValue > ret.Utility)
+                    ret = (moveValue, action);
 
                 state.ReverseLastMove();
                 if (moveValue >= beta)
@@ -73,7 +75,9 @@ namespace MSI
             {
                 state.ApplyMove(action);
                 var moveValue = MaxValue(state, alpha, beta, depth + 1).Utility;
-                ret = (moveValue, action);
+
+                if (double.IsNaN(ret.Utility) || moveValue < ret.Utility)
+                    ret = (moveValue, action);
 
                 state.ReverseLastMove();
                 if (moveValue <= alpha)
