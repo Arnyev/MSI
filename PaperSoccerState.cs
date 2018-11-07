@@ -18,8 +18,16 @@ namespace MSI
         private readonly Dictionary<BigInteger, List<PaperSoccerAction>> actionsDictionary;
         private bool IsInGoal => IsEndPosition(Position);
 
+        public int Width { get; }
+        public int Height { get; }
+        public int GoalWidth { get; }
+
         public PaperSoccerState(int width, int height, int goalWidth)
         {
+            Width = width;
+            Height = height;
+            GoalWidth = goalWidth;
+
             if (goalWidth % 2 != width % 2)
                 throw new ArgumentException("Niesymetryczna plansza!");
             if (goalWidth > width)
@@ -116,11 +124,18 @@ namespace MSI
 
             if (IsInGoal)
             {
-                playerUtility = northPlayer && Position.Y > 2 || (!northPlayer && Position.Y < 2) ? 2 : -2;
+                playerUtility = northPlayer && Position.Y > 2 || (!northPlayer && Position.Y < 2) ?
+                    double.PositiveInfinity : double.NegativeInfinity;
                 return true;
             }
 
-            return AvailableActions.Count == 0;//remis
+            if (AvailableActions.Count == 0)
+            {
+                playerUtility = northPlayer ? double.NegativeInfinity : double.PositiveInfinity;
+                return true;
+            }
+
+            return false;
         }
 
         public List<PaperSoccerAction> AvailableActions

@@ -8,7 +8,8 @@ namespace MSI
     {
         static void Main(string[] args)
         {
-            GameRunner.RunGame(10, 10, 2, PaperSoccerHeuristics.RandomHeuristic, PaperSoccerHeuristics.RandomHeuristic);
+            GameRunner.RunGame(8, 10, 2, PaperSoccerHeuristics.ClosestDistance, PaperSoccerHeuristics.ClosestYDistance);
+            Console.WriteLine("Finish");
         }
     }
 }
