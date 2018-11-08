@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 
 namespace MSI
@@ -9,20 +10,8 @@ namespace MSI
         // H_1
         public static bool ClosestDistance(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
-            int goalPositionX = state.Width / 2 + 1;
-            int goalMargin = state.GoalWidth / 2 - 1;
-            int closestGoalPositionX =
-                Math.Clamp(state.Position.X, goalPositionX - goalMargin, goalPositionX + goalMargin);
-
-            int xDist = state.Position.X - closestGoalPositionX;
-            int yDist = 0;
-
-            if (playerNorth)
-                yDist = state.Position.Y - 2;
-            else
-                yDist = state.Position.Y - (state.Height + 4);
-
-            util = -Math.Sqrt(xDist * xDist + yDist * yDist);
+            var distVector = GetVectorToClosestGoal(state, playerNorth);
+            util = -Math.Sqrt(distVector.X * distVector.X + distVector.Y * distVector.Y);
 
             return depth == 2;
         }
@@ -30,20 +19,8 @@ namespace MSI
         // H_2
         public static bool ClosestYDistance(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
-            int goalPositionX = state.Width / 2 + 1;
-            int goalMargin = state.GoalWidth / 2 - 1;
-            int closestGoalPositionX =
-                Math.Clamp(state.Position.X, goalPositionX - goalMargin, goalPositionX + goalMargin);
-
-            int xDist = Math.Abs(state.Position.X - closestGoalPositionX);
-            int yDist = 0;
-
-            if (playerNorth)
-                yDist = state.Position.Y - 2;
-            else
-                yDist = (state.Height + 4) - state.Position.Y;
-
-            util = -(state.Width * yDist + xDist);
+            var distVector = GetVectorToClosestGoal(state, playerNorth);
+            util = -(state.Width * distVector.Y + distVector.X);
 
             return depth == 2;
         }
@@ -51,9 +28,12 @@ namespace MSI
         // H_3
         public static bool EmptyBoard(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
-            util = 0;
+            var distVector = GetVectorToClosestGoal(state, playerNorth);
+            util = -Math.Max(distVector.X, distVector.Y);
+
             return depth == 2;
         }
+
 
         // H_4
         public static bool MaxMovesCount(PaperSoccerState state, int depth, bool playerNorth, out double util)
@@ -91,7 +71,7 @@ namespace MSI
         // H_7
         public static bool ParametrizedHeuristics(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
-            List<(Heuristic<PaperSoccerState> h, float p)> parametrizedHeuristics
+            List<(Heuristic<PaperSoccerState> heuristic, float weight)> parametrizedHeuristics
                 = new List<(Heuristic<PaperSoccerState>, float)>()
             {
                 (ClosestDistance, 0.9f),
@@ -105,8 +85,8 @@ namespace MSI
             double sum = 0;
             parametrizedHeuristics.ForEach(x =>
             {
-                x.h(state, depth, playerNorth, out double tmpUtil);
-                sum += tmpUtil * x.p;
+                x.heuristic(state, depth, playerNorth, out double tmpUtil);
+                sum += tmpUtil * x.weight;
             });
             util = sum;
 
@@ -117,6 +97,24 @@ namespace MSI
         {
             util = 0;
             return depth == 2;
+        }
+
+        
+        private static Point GetVectorToClosestGoal(PaperSoccerState state, bool playerNorth)
+        {
+            int goalPositionX = state.Width / 2 + 1;
+            int goalMargin = state.GoalWidth / 2 - 1;
+            int closestGoalPositionX =
+                Math.Clamp(state.Position.X, goalPositionX - goalMargin, goalPositionX + goalMargin);
+
+            int xDist = Math.Abs(state.Position.X - closestGoalPositionX);
+            int yDist = 0;
+            if (playerNorth)
+                yDist = state.Position.Y - 2;
+            else
+                yDist = (state.Height + 4) - state.Position.Y;
+
+            return new Point(closestGoalPositionX, yDist);
         }
     }
 }
