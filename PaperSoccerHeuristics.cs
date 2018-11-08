@@ -76,10 +76,9 @@ namespace MSI
             {
                 (ClosestDistance, 0.9f),
                 (ClosestYDistance, 0.8f),
-                (EmptyBoard, 0),
+                (EmptyBoard, 0.3f),
                 (MaxMovesCount, 0.4f),
-                (MinOpponentMovesCount, 0.2f),
-                (RandomHeuristic, 0.2f)
+                (MinOpponentMovesCount, 0.2f)
             };
 
             double sum = 0;
