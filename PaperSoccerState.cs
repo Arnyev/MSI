@@ -15,7 +15,6 @@ namespace MSI
         public readonly bool[,] DiagonalsNW;
         public Point Position { get; private set; }
         private readonly List<PaperSoccerAction> takenActions;
-        private readonly Dictionary<BigInteger, List<PaperSoccerAction>> actionsDictionary;
         private bool IsInGoal => IsEndPosition(Position);
 
         public int Width { get; }
@@ -47,7 +46,6 @@ namespace MSI
             InitializeBounds(width, height, goalWidth, true);
             Position = new Point(width / 2 + 1, height / 2 + 3);
             SaveBoardImage("p.png");
-            actionsDictionary = new Dictionary<BigInteger, List<PaperSoccerAction>>();
         }
 
         private void InitializeBounds(int width, int height, int goalWidth, bool value)
@@ -142,49 +140,72 @@ namespace MSI
         {
             get
             {
-                var code = EncodeState();
-                if (actionsDictionary.TryGetValue(code, out List<PaperSoccerAction> list))
-                    return list;
+                var actions = new List<PaperSoccerAction>();
+                var analysisStack = new Stack<AnalysedPointDirection>();
+                var analyzedDirections = new List<Direction>();
 
-                var actions = ActionsFromPoint(Position);
-                actions.ForEach(x => x.Reverse());
-                var available = actions.Select(x => new PaperSoccerAction(x.ToArray())).ToList();
-                actionsDictionary.Add(code, available);
-                return available;
+                FirstStepFindingActions(Position, actions, analysisStack);
+
+                while (analysisStack.Count != 0)
+                {
+                    var point = analysisStack.Peek();
+                    var lastPosition = LastPosition(point.Point, point.Direction);
+
+                    if (point.Analysed) // odpowiada wyjściu z rekurencji
+                    {
+                        UpdateBlockedMoves(lastPosition, point.Direction, false); // Cofnięcie ruchu skoro cofamy się z rekurencji
+                        analysisStack.Pop();
+                        analyzedDirections.RemoveAt(analyzedDirections.Count - 1);
+                    }
+                    else
+                    {
+                        UpdateBlockedMoves(lastPosition, point.Direction, true); // Dopiero w tym momencie uznajemy że ruch został wykonany
+                        var directions = AvailableDirections(point.Point);
+
+                        foreach (var direction in directions)
+                        {
+                            var newPosition = NewPosition(point.Point, direction);
+                            var isBounce = IsBounce(newPosition);
+                            var endPosition = IsEndPosition(newPosition);
+                            if (!isBounce || endPosition)
+                                AddFinishedAction(analyzedDirections, point, direction, actions); // Doszliśmy do końca odbić
+                            else
+                                analysisStack.Push(new AnalysedPointDirection(newPosition, direction)); // Przygotowuje nowe zejście rekurencyjne
+                        }
+
+                        point.Analysed = true;
+                        analyzedDirections.Add(point.Direction); // Skoro zeszliśmy dalej trzeba zapamiętać dotychczasową ścieżkę
+                    }
+                }
+
+                return actions;
             }
         }
 
-        private BigInteger EncodeState()
+        private void FirstStepFindingActions(Point startingPosition, List<PaperSoccerAction> actions, Stack<AnalysedPointDirection> stack)
         {
-            List<byte> bytes = new List<byte>();
-            foreach (var taken in takenActions)
-                foreach (var direction in taken.Directions)
-                    bytes.Add((byte)direction);
+            var startingDirections = AvailableDirections(startingPosition);
 
-            return new BigInteger(bytes.ToArray());
-        }
-
-        private List<List<Direction>> ActionsFromPoint(Point position)
-        {
-            var actions = new List<List<Direction>>();
-            var directions = AvailableDirections(position);
-            foreach (var direction in directions)
+            foreach (var direction in startingDirections)
             {
-                var newP = NewPosition(position, direction);
+                var newP = NewPosition(startingPosition, direction);
                 var isBounce = IsBounce(newP);
                 var endPosition = IsEndPosition(newP);
                 if (!isBounce || endPosition)
-                    actions.Add(new List<Direction> { direction });
+                    actions.Add(new PaperSoccerAction(new[] {direction}));
                 else
-                {
-                    UpdateBlockedMoves(position, direction, true);
-                    var actionsFromNext = ActionsFromPoint(newP);
-                    actionsFromNext.ForEach(x => x.Add(direction));
-                    actions.AddRange(actionsFromNext);
-                    UpdateBlockedMoves(position, direction, false);
-                }
+                    stack.Push(new AnalysedPointDirection(newP, direction));
             }
-            return actions;
+        }
+
+        private static void AddFinishedAction(List<Direction> stackAnalyzedDirections, AnalysedPointDirection point, Direction direction,
+            List<PaperSoccerAction> actions)
+        {
+            var action = new Direction[stackAnalyzedDirections.Count + 2];
+            stackAnalyzedDirections.CopyTo(action, 0);
+            action[action.Length - 2] = point.Direction;
+            action[action.Length - 1] = direction;
+            actions.Add(new PaperSoccerAction(action));
         }
 
         private bool IsEndPosition(Point p) => p.Y == 2 || p.Y == Horizontals.GetLength(1) - 2;
@@ -247,7 +268,7 @@ namespace MSI
 
         private List<Direction> AvailableDirections(Point p)
         {
-            var result = new List<Direction>();
+            var result = new List<Direction>(8);
 
             if (!Verticals[p.X, p.Y])
                 result.Add(Direction.North);
@@ -362,6 +383,22 @@ namespace MSI
                     if (DiagonalsNW[i, j])
                         g.DrawLine(pen, new Point(i * 50, j * 50), new Point(i * 50 - 50, j * 50 + 50));
                 }
+        }
+    }
+
+    /// <summary>
+    /// Klasa mająca za zadanie zasymulować jeden węzeł przetwarzanie rekurencji.
+    /// </summary>
+    public class AnalysedPointDirection
+    {
+        public readonly Point Point;
+        public bool Analysed;
+        public readonly Direction Direction;
+
+        public AnalysedPointDirection(Point point, Direction direction)
+        {
+            Point = point;
+            Direction = direction;
         }
     }
 
