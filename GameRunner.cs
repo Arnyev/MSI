@@ -12,10 +12,12 @@ namespace MSI
             var searchA = new AlphaBetaSearch<PaperSoccerState, PaperSoccerAction>(playerA, true);
             var searchB = new AlphaBetaSearch<PaperSoccerState, PaperSoccerAction>(playerB, false);
             bool currentMoveA = true;
+            int moveIndex = 0;
             while (!state.IsFinished(out double playerAUtility, true))
             {
                 var action = currentMoveA ? searchA.GetMove(state) : searchB.GetMove(state);
                 state.ApplyMove(action);
+                Console.WriteLine("Move applied." + moveIndex++);
                 currentMoveA = !currentMoveA;
             }
             state.SaveBoardImage("Plansza.png");

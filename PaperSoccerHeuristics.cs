@@ -22,14 +22,14 @@ namespace MSI
             var distVector = GetVectorToClosestGoal(state, playerNorth);
             util = -(state.Width * distVector.Y + distVector.X);
 
-            return depth == 2;
+            return depth == 3;
         }
 
         // H_3
         public static bool EmptyBoard(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
             var distVector = GetVectorToClosestGoal(state, playerNorth);
-            util = -Math.Max(distVector.X, distVector.Y);
+            util = -distVector.X - distVector.Y;
 
             return depth == 2;
         }
@@ -113,7 +113,7 @@ namespace MSI
             else
                 yDist = (state.Height + 4) - state.Position.Y;
 
-            return new Point(closestGoalPositionX, yDist);
+            return new Point(xDist, yDist);
         }
     }
 }

@@ -7,6 +7,7 @@ namespace MSI
     /// <param name="state"> Stan gry do oceny </param>
     /// <param name="depth"> Głebokość stanu w obecnym drzewie przeszukiwania. </param>
     /// <param name="playerA"> Czy gracz jest graczem A czy B. </param>
+    /// <param name="currentMovePlayerA"> Czy w tym momencie ruch do wyboru ma gracz A czy B. </param>
     /// <param name="utility"> Wartość obecnej pozycji. </param>
     /// <returns> Czy zakończyć dalsze przeszukiwanie poddrzewa w tym punkcie. </returns>
     public delegate bool Heuristic<TState>(TState state, int depth, bool playerA, out double utility);
@@ -45,7 +46,8 @@ namespace MSI
                 return (utility, new TAction());
 
             (double Utility, TAction Action) ret = (double.NaN, new TAction());
-            foreach (var action in state.AvailableActions)
+            var actions = state.AvailableActions;
+            foreach (var action in actions)
             {
                 state.ApplyMove(action);
                 var moveValue = MinValue(state, alpha, beta, depth + 1).Utility;

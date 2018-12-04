@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
-using System.Numerics;
 
 namespace MSI
 {
@@ -14,7 +13,7 @@ namespace MSI
         public readonly bool[,] DiagonalsNE;
         public readonly bool[,] DiagonalsNW;
         public Point Position { get; private set; }
-        private readonly List<PaperSoccerAction> takenActions;
+        public readonly List<PaperSoccerAction> takenActions;
         private bool IsInGoal => IsEndPosition(Position);
 
         public int Width { get; }
@@ -116,24 +115,20 @@ namespace MSI
             }
         }
 
-        public bool IsFinished(out double playerUtility, bool northPlayer)
+        public bool IsFinished(out double playerUtility, bool playerNorth)
         {
             playerUtility = 0;
-
             if (IsInGoal)
-            {
-                playerUtility = northPlayer && Position.Y > 2 || (!northPlayer && Position.Y < 2) ?
-                    double.PositiveInfinity : double.NegativeInfinity;
-                return true;
-            }
+                playerUtility = Position.Y <= 2 ? double.PositiveInfinity : double.NegativeInfinity;
 
             if (AvailableActions.Count == 0)
-            {
-                playerUtility = northPlayer ? double.NegativeInfinity : double.PositiveInfinity;
-                return true;
-            }
+                playerUtility = takenActions.Count % 2 == 0 ? double.PositiveInfinity : double.NegativeInfinity;
 
-            return false;
+            var finished = AvailableActions.Count == 0 || IsInGoal;
+            if (!playerNorth && finished)
+                playerUtility = double.IsPositiveInfinity(playerUtility) ? double.NegativeInfinity : double.PositiveInfinity;
+
+            return finished;
         }
 
         public List<PaperSoccerAction> AvailableActions
@@ -192,7 +187,7 @@ namespace MSI
                 var isBounce = IsBounce(newP);
                 var endPosition = IsEndPosition(newP);
                 if (!isBounce || endPosition)
-                    actions.Add(new PaperSoccerAction(new[] {direction}));
+                    actions.Add(new PaperSoccerAction(new[] { direction }));
                 else
                     stack.Push(new AnalysedPointDirection(newP, direction));
             }
@@ -349,45 +344,66 @@ namespace MSI
             var width = Verticals.GetLength(0);
             var height = Verticals.GetLength(1);
 
-            var image = new Bitmap(width * 50, height * 50);
+            var lineLen = 100;
+            var image = new Bitmap(width * lineLen, height * lineLen);
+            var rand = new Random();
             var actions = takenActions.ToList();
-            var pen = Pens.Blue;
+
+            Font drawFont = new Font("Arial", 16);
+            SolidBrush drawBrush = new SolidBrush(Color.Black);
+
+            while (takenActions.Count > 0)
+                ReverseLastMove();
+
             using (var g = Graphics.FromImage(image))
             {
-                g.DrawEllipse(new Pen(Color.Green, 10), Position.X * 50 - 10, Position.Y * 50 - 10, 20, 20);
+                g.DrawEllipse(new Pen(Color.Green, 10), Position.X * lineLen - 10, Position.Y * lineLen - 10, 20, 20);
 
-                while (takenActions.Count > 0)
+                DrawLines(width, height, lineLen, Pens.Black, g);
+                for (int i = 0; i < actions.Count; i++)
                 {
-                    DrawLines(width, height, pen, g);
-                    ReverseLastMove();
-                    pen = pen == Pens.Blue ? Pens.Red : Pens.Blue;
+                    PaperSoccerAction action = actions[i];
+                    var pen = new Pen(Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256)), 2);
+                    var p = Position;
+                    for (int j = 0; j < action.Directions.Length; j++)
+                {
+                        Direction direction = (Direction)action.Directions[j];
+                        var nextP = NewPosition(p, direction);
+                        g.DrawLine(pen, new Point(p.X * lineLen, p.Y * lineLen), new Point(nextP.X * lineLen, nextP.Y * lineLen));
+                        var middle = new Point((p.X + nextP.X) * lineLen / 2, (p.Y + nextP.Y) * lineLen / 2 - 15);
+                        if (direction == Direction.NorthEast || direction == Direction.SouthWest)
+                            middle = new Point(middle.X - 15, middle.Y + 15);
+                        g.DrawString(i.ToString() + '.' + j, drawFont, drawBrush, middle);
+                        p = nextP;
+                    }
+
+                    ApplyMove(action);
                 }
-                DrawLines(width, height, Pens.Black, g);
             }
-            image.RotateFlip(RotateFlipType.Rotate180FlipX);
+
+            // image.RotateFlip(RotateFlipType.Rotate180FlipX);
             image.Save(filename, ImageFormat.Png);
-            actions.ForEach(ApplyMove);
         }
 
-        private void DrawLines(int width, int height, Pen pen, Graphics g)
+        private void DrawLines(int width, int height, int lineLen, Pen pen, Graphics g)
         {
             for (int i = 0; i < width; i++)
                 for (int j = 0; j < height; j++)
                 {
                     if (Verticals[i, j])
-                        g.DrawLine(pen, new Point(i * 50, j * 50), new Point(i * 50, j * 50 + 50));
+                        g.DrawLine(pen, new Point(i * lineLen, j * lineLen), new Point(i * lineLen, j * lineLen + lineLen));
                     if (Horizontals[i, j])
-                        g.DrawLine(pen, new Point(i * 50, j * 50), new Point(i * 50 + 50, j * 50));
+                        g.DrawLine(pen, new Point(i * lineLen, j * lineLen), new Point(i * lineLen + lineLen, j * lineLen));
                     if (DiagonalsNE[i, j])
-                        g.DrawLine(pen, new Point(i * 50, j * 50), new Point(i * 50 + 50, j * 50 + 50));
+                        g.DrawLine(pen, new Point(i * lineLen, j * lineLen), new Point(i * lineLen + lineLen, j * lineLen + lineLen));
                     if (DiagonalsNW[i, j])
-                        g.DrawLine(pen, new Point(i * 50, j * 50), new Point(i * 50 - 50, j * 50 + 50));
+                        g.DrawLine(pen, new Point(i * lineLen, j * lineLen), new Point(i * lineLen - lineLen, j * lineLen + lineLen));
                 }
         }
     }
 
     /// <summary>
-    /// Klasa mająca za zadanie zasymulować jeden węzeł przetwarzanie rekurencji.
+    /// Klasa mająca za zadanie zasymulować jeden węzeł przetwarzania rekurencji.
     /// </summary>
     public class AnalysedPointDirection
     {
@@ -412,6 +428,11 @@ namespace MSI
         public PaperSoccerAction()
         {
             Directions = new Direction[0];
+        }
+
+        public override string ToString()
+        {
+            return string.Join(' ', Directions);
         }
     }
 
