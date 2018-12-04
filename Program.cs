@@ -18,7 +18,7 @@ namespace MSI
             .Add(PaperSoccerHeuristics.MaxMovesCount, 0.4)
             .Add(PaperSoccerHeuristics.MinOpponentMovesCount, 0.2);
             // GameRunner.RunGame(6, 8, 2, PaperSoccerHeuristics.ParametrizedHeuristics, PaperSoccerHeuristics.ClosestYDistance);
-            GameRunner.RunGame(6, 8, 2, PaperSoccerHeuristics.ClosestYDistance, PaperSoccerHeuristics.ClosestYDistance);
+            GameRunner.RunGame(6, 8, 2, builder.Build(), PaperSoccerHeuristics.ClosestYDistance);
             Console.WriteLine("Finish");
             Console.WriteLine(sw.ElapsedMilliseconds);
         }
