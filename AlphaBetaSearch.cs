@@ -56,6 +56,10 @@ namespace MSI
                     ret = (moveValue, action);
 
                 state.ReverseLastMove();
+
+                if (moveValue == double.MaxValue)
+                    break;
+
                 if (moveValue >= beta)
                     return (moveValue, action);
                 alpha = new[] { alpha, moveValue }.Max();
@@ -82,8 +86,13 @@ namespace MSI
                     ret = (moveValue, action);
 
                 state.ReverseLastMove();
+
+                if (moveValue == double.MinValue)
+                    break;
+
                 if (moveValue <= alpha)
                     return (moveValue, action);
+
                 beta = new[] { beta, moveValue }.Min();
             }
 

@@ -15,6 +15,7 @@ namespace MSI
         public Point Position { get; private set; }
         public readonly List<PaperSoccerAction> takenActions;
         private bool IsInGoal => IsEndPosition(Position);
+        public List<PaperSoccerAction> availableActionsCache;
 
         public int Width { get; }
         public int Height { get; }
@@ -118,15 +119,16 @@ namespace MSI
         public bool IsFinished(out double playerUtility, bool playerNorth)
         {
             playerUtility = 0;
+            var actions = AvailableActions;
             if (IsInGoal)
-                playerUtility = Position.Y <= 2 ? double.PositiveInfinity : double.NegativeInfinity;
+                playerUtility = Position.Y <= 2 ? double.MaxValue : double.MinValue;
 
-            if (AvailableActions.Count == 0)
-                playerUtility = takenActions.Count % 2 == 0 ? double.PositiveInfinity : double.NegativeInfinity;
+            if (actions.Count == 0)
+                playerUtility = takenActions.Count % 2 == 0 ? double.MaxValue : double.MinValue;
 
-            var finished = AvailableActions.Count == 0 || IsInGoal;
+            var finished = actions.Count == 0 || IsInGoal;
             if (!playerNorth && finished)
-                playerUtility = double.IsPositiveInfinity(playerUtility) ? double.NegativeInfinity : double.PositiveInfinity;
+                playerUtility = playerUtility == double.MaxValue ? double.MinValue : double.MaxValue;
 
             return finished;
         }
@@ -172,6 +174,8 @@ namespace MSI
                         analyzedDirections.Add(point.Direction); // Skoro zeszliśmy dalej trzeba zapamiętać dotychczasową ścieżkę
                     }
                 }
+
+                availableActionsCache = actions;
 
                 return actions;
             }
@@ -318,6 +322,8 @@ namespace MSI
 
         public void ReverseLastMove()
         {
+            availableActionsCache = null;
+
             var action = takenActions[takenActions.Count - 1];
             var directions = action.Directions.ToArray();
             Array.Reverse(directions);
@@ -331,6 +337,8 @@ namespace MSI
 
         public void ApplyMove(PaperSoccerAction action)
         {
+            availableActionsCache = null;
+
             foreach (var direction in action.Directions)
             {
                 UpdateBlockedMoves(Position, direction, true);

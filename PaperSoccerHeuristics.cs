@@ -11,8 +11,9 @@ namespace MSI
         public static bool ClosestDistance(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
             var distVector = GetVectorToClosestGoal(state, playerNorth);
-            util = -Math.Sqrt(distVector.X * distVector.X + distVector.Y * distVector.Y);
+            var maxDist = Math.Sqrt(state.Width * state.Width + state.Height * state.Height);
 
+            util = 1 + -Math.Sqrt(distVector.X * distVector.X + distVector.Y * distVector.Y) / maxDist;
             return depth == 2;
         }
 
@@ -20,45 +21,51 @@ namespace MSI
         public static bool ClosestYDistance(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
             var distVector = GetVectorToClosestGoal(state, playerNorth);
-            util = -(state.Width * distVector.Y + distVector.X);
+            var maxDist = state.Width * (state.Height + 1.0);
+            util = 1 + -(state.Width * distVector.Y + distVector.X) / maxDist;
 
-            return depth == 3;
+            return depth == 4;
         }
 
         // H_3
         public static bool EmptyBoard(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
             var distVector = GetVectorToClosestGoal(state, playerNorth);
-            util = -distVector.X - distVector.Y;
-
-            return depth == 2;
+            util = 1 + (-distVector.X - distVector.Y) / (state.Width + (double)state.Height);
+            return depth == 3;
         }
 
 
         // H_4
         public static bool MaxMovesCount(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
-            var availableActions = state.AvailableActions;
-            util = availableActions.Count;
-
-            return depth == 2;
+            util = 1 - Math.Exp(-Math.Sqrt(state.AvailableActions.Count / (state.takenActions.Count * state.takenActions.Count + 1.0)));
+            if (util < 0)
+                util = 0;
+            if (util > 1)
+                util = 1;
+            return depth == 3;
         }
 
         // H_5
         public static bool MinOpponentMovesCount(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
-            var availableActions = state.AvailableActions;
-            int opponentMovesCount = int.MaxValue;
-
-            foreach (var action in availableActions)
-            {
-                state.ApplyMove(action);
-                opponentMovesCount = Math.Min(opponentMovesCount, state.AvailableActions.Count);
-                state.ReverseLastMove();
-            }
-            util = -opponentMovesCount;
-
+            util = Math.Exp(-Math.Sqrt(state.AvailableActions.Count / (state.takenActions.Count * state.takenActions.Count + 1.0)));
+            if (util < 0)
+                util = 0;
+            if (util > 1)
+                util = 1;
             return depth == 2;
+        }
+
+        public static bool MinOpponentMovesCountD4(PaperSoccerState state, int depth, bool playerNorth, out double util)
+        {
+            util = Math.Exp(-Math.Sqrt(state.AvailableActions.Count / (state.takenActions.Count * state.takenActions.Count + 1.0)));
+            if (util < 0)
+                util = 0;
+            if (util > 1)
+                util = 1;
+            return depth == 4;
         }
 
         // H_6
@@ -95,10 +102,10 @@ namespace MSI
         public static bool NoHeuristic(PaperSoccerState state, int depth, bool playerNorth, out double util)
         {
             util = 0;
-            return depth == 2;
+            return depth == 4;
         }
 
-        
+
         private static Point GetVectorToClosestGoal(PaperSoccerState state, bool playerNorth)
         {
             int goalPositionX = state.Width / 2 + 1;
