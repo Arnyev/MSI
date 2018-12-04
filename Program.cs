@@ -13,14 +13,11 @@ namespace MSI
             sw.Start();
             var builder = new HeuristicBuilder<PaperSoccerState>(3);
             builder
-            .Add(PaperSoccerHeuristics.ClosestYDistance, 0.8)
-            .Add(PaperSoccerHeuristics.MinOpponentMovesCountD4);
-            GameRunner.RunGame(4, 6, 2, PaperSoccerHeuristics.ClosestYDistance, PaperSoccerHeuristics.ClosestYDistance);
-            // GameRunner.RunGame(4, 6, 2, PaperSoccerHeuristics.MaxMovesCount, PaperSoccerHeuristics.EmptyBoard);
-
-            // GameRunner.RunGame(4, 6, 3, PaperSoccerHeuristics.NoHeuristic, PaperSoccerHeuristics.NoHeuristic);
-
-
+            .Add(PaperSoccerHeuristics.EmptyBoard, 0.3)
+            .Add(PaperSoccerHeuristics.MaxMovesCount, 0.4)
+            .Add(PaperSoccerHeuristics.MinOpponentMovesCount, 0.2);
+            // GameRunner.RunGame(6, 8, 2, PaperSoccerHeuristics.ParametrizedHeuristics, PaperSoccerHeuristics.ClosestYDistance);
+            GameRunner.RunGame(6, 8, 2, builder.Build(), PaperSoccerHeuristics.ClosestYDistance);
             Console.WriteLine("Finish");
             Console.WriteLine(sw.ElapsedMilliseconds);
         }

@@ -43,10 +43,11 @@ namespace MSI
                     var allFinished = true;
 
                     double sum = 0;
+                    double weightsSum = parametrizedHeuristics.Select(x => x.weight).Sum();
                     parametrizedHeuristics.ForEach(x =>
                     {
                         allFinished &= x.heuristic(state, depth, playerA, out double tmpUtil);
-                        sum += tmpUtil * x.weight;
+                        sum += tmpUtil * x.weight / weightsSum;
                     });
                     utility = sum;
 
@@ -56,10 +57,11 @@ namespace MSI
                 return delegate (TState state, int depth, bool playerA, out double utility)
                 {
                     double sum = 0;
+                    double weightsSum = parametrizedHeuristics.Select(x => x.weight).Sum();
                     parametrizedHeuristics.ForEach(x =>
                     {
                         x.heuristic(state, depth, playerA, out double tmpUtil);
-                        sum += tmpUtil * x.weight;
+                        sum += tmpUtil * x.weight / weightsSum;
                     });
                     utility = sum;
 
