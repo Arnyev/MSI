@@ -18,6 +18,8 @@ namespace MSI
                 var action = currentMoveA ? searchA.GetMove(state) : searchB.GetMove(state);
                 state.ApplyMove(action);
                 Console.WriteLine("Move applied." + moveIndex++);
+                state.SaveBoardImage($"p/Plansza{moveIndex}.png");
+
                 currentMoveA = !currentMoveA;
             }
             state.SaveBoardImage("Plansza.png");

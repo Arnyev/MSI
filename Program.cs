@@ -11,13 +11,12 @@ namespace MSI
         {
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            var builder = new HeuristicBuilder<PaperSoccerState>(3);
+            var builder = new HeuristicBuilder<PaperSoccerState>(4);
             builder
-            .Add(PaperSoccerHeuristics.EmptyBoard, 0.3)
-            .Add(PaperSoccerHeuristics.MaxMovesCount, 0.4)
-            .Add(PaperSoccerHeuristics.MinOpponentMovesCount, 0.2);
+            .Add(PaperSoccerHeuristics.ClosestYDistanceD2, 0.3)
+            .Add(PaperSoccerHeuristics.MaxPathsToEnd, 0.4);
             // GameRunner.RunGame(6, 8, 2, PaperSoccerHeuristics.ParametrizedHeuristics, PaperSoccerHeuristics.ClosestYDistance);
-            GameRunner.RunGame(6, 8, 2, builder.Build(), PaperSoccerHeuristics.ClosestYDistance);
+            GameRunner.RunGame(6, 6, 2, builder.Build(), PaperSoccerHeuristics.ClosestYDistanceD3);
             Console.WriteLine("Finish");
             Console.WriteLine(sw.ElapsedMilliseconds);
         }

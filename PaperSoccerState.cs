@@ -133,6 +133,8 @@ namespace MSI
             return finished;
         }
 
+        private int maxMoveCount = 100000;
+
         public List<PaperSoccerAction> AvailableActions
         {
             get
@@ -175,6 +177,12 @@ namespace MSI
                     }
                 }
 
+                if (actions.Count > maxMoveCount)
+                {
+                    Console.WriteLine(actions.Count);
+                    maxMoveCount <<= 1;
+                }
+
                 availableActionsCache = actions;
 
                 return actions;
@@ -215,7 +223,7 @@ namespace MSI
                 Verticals[p.X, p.Y - 1] || DiagonalsNE[p.X - 1, p.Y - 1] || Horizontals[p.X - 1, p.Y] || DiagonalsNW[p.X, p.Y];
         }
 
-        private static Point NewPosition(Point position, Direction direction)
+        public static Point NewPosition(Point position, Direction direction)
         {
             switch (direction)
             {
@@ -265,7 +273,7 @@ namespace MSI
             }
         }
 
-        private List<Direction> AvailableDirections(Point p)
+        public List<Direction> AvailableDirections(Point p)
         {
             var result = new List<Direction>(8);
 
@@ -374,7 +382,7 @@ namespace MSI
                     var pen = new Pen(Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256)), 2);
                     var p = Position;
                     for (int j = 0; j < action.Directions.Length; j++)
-                {
+                    {
                         Direction direction = (Direction)action.Directions[j];
                         var nextP = NewPosition(p, direction);
                         g.DrawLine(pen, new Point(p.X * lineLen, p.Y * lineLen), new Point(nextP.X * lineLen, nextP.Y * lineLen));
